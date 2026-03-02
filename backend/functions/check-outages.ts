@@ -7,8 +7,7 @@ import type { OutageAlert, UrlItem } from "../lib/types";
 
 const CHECK_CONCURRENCY = 10;
 
-/** Intervalo mínimo entre re-notificações para a mesma URL (em ms) */
-const RENOTIFY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
+const RENOTIFY_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 export const handler = async () => {
   console.log("Checking for outages...");
@@ -66,9 +65,7 @@ async function checkUrl(item: UrlItem): Promise<void> {
 
   const newStatus = isUp ? "up" : "down";
 
-  // Detecta transição de estado
   if (previousStatus === "up" && !isUp) {
-    // ── Outage detectado ──
     console.error(`Outage detected for ${url}`);
     await updateStatus(id, userId, "down", now, now);
     await publishAlert({ type: "outage", url, userId, timestamp: now });
@@ -76,7 +73,6 @@ async function checkUrl(item: UrlItem): Promise<void> {
   }
 
   if (previousStatus === "down" && isUp) {
-    // ── Recovery detectado ──
     console.log(`Recovery detected for ${url}`);
     await updateStatus(id, userId, "up", now, now);
     await publishAlert({ type: "recovery", url, userId, timestamp: now });
@@ -84,7 +80,6 @@ async function checkUrl(item: UrlItem): Promise<void> {
   }
 
   if (previousStatus === "down" && !isUp) {
-    // ── Ainda down — re-notifica se passou o intervalo ──
     if (shouldRenotify(item.lastNotifiedAt)) {
       console.warn(`Re-notifying outage for ${url}`);
       await updateStatus(id, userId, "down", now, now);
@@ -93,7 +88,6 @@ async function checkUrl(item: UrlItem): Promise<void> {
     }
   }
 
-  // Sem mudança de estado — só atualiza lastChecked
   await updateStatus(id, userId, newStatus, now);
 }
 
@@ -102,7 +96,6 @@ function shouldRenotify(lastNotifiedAt?: string): boolean {
   return Date.now() - new Date(lastNotifiedAt).getTime() > RENOTIFY_INTERVAL_MS;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function updateStatus(
   id: string,

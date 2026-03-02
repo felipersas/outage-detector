@@ -127,7 +127,10 @@ export default $config({
 
     new sst.aws.Cron("OutageChecker", {
       schedule: "rate(1 minute)",
-      function: alertOutageHandler,
+      function: {
+        ...alertOutageHandler,
+        timeout: "65 seconds"
+      },
     });
 
     alertTopic.subscribe("NotifyUser", notifyUserHandler);
