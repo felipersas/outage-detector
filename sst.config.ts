@@ -9,8 +9,6 @@ export default $config({
     };
   },
   async run() {
-    const labRole = "arn:aws:iam::432079813402:role/LabRole";
-
     // ─── Cognito Auth ────────────────────────────────────────────────────────
 
     const userPool = new sst.aws.CognitoUserPool("UserPool", {
@@ -63,13 +61,6 @@ export default $config({
     // ─── API Gateway (Backend) ───────────────────────────────────────────────
 
     const api = new sst.aws.ApiGatewayV2("OutageDetectorAPI", {
-      transform: {
-        route: {
-          handler: (args) => {
-            args.role = labRole;
-          },
-        },
-      },
       cors: {
         allowOrigins: ["*"],
         allowHeaders: ["Authorization", "Content-Type"],
@@ -127,13 +118,11 @@ export default $config({
     const alertOutageHandler = {
       handler: "backend/functions/check-outages.handler",
       link: [table, alertTopic],
-      role: labRole,
     };
 
     const notifyUserHandler = {
       handler: "backend/functions/notify-user.handler",
       link: [alertTopic, usersTable, telegramBotToken],
-      role: labRole,
     };
 
     new sst.aws.Cron("OutageChecker", {
@@ -150,20 +139,6 @@ export default $config({
       link: [userPool, userPoolClient],
       environment: {
         API_URL: api.url,
-      },
-      transform: {
-        server: (args) => {
-          args.role = labRole;
-        },
-        imageOptimizer: (args) => {
-          args.role = labRole;
-        },
-        revalidationEventsSubscriber: (args) => {
-          args.role = labRole;
-        },
-        revalidationSeeder: (args) => {
-          args.role = labRole;
-        },
       },
     });
 

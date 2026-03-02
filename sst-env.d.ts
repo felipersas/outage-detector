@@ -22,9 +22,22 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "UserPool": {
+      "id": string
+      "type": "sst.aws.CognitoUserPool"
+    }
     "UsersTable": {
       "name": string
       "type": "sst.aws.Dynamo"
+    }
+    "Web": {
+      "type": "sst.aws.Nextjs"
+      "url": string
+    }
+    "WebClient": {
+      "id": string
+      "secret": string
+      "type": "sst.aws.CognitoUserPoolClient"
     }
   }
 }

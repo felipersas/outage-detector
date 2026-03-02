@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Link from "next/link";
-import { signUpAction, type AuthState } from "@/lib/actions/auth";
+import { signUpAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,22 +15,51 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UserPlus } from "lucide-react";
-
-const initialState: AuthState = {};
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { UserPlus, Loader2, AlertCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  signUpSchema,
+  type SignUpInput,
+} from "@/lib/schemas";
 
 export default function SignUpPage() {
-  const [state, formAction, pending] = useActionState(
-    signUpAction,
-    initialState,
-  );
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (state.success && state.email) {
-      router.push(`/auth/confirm?email=${encodeURIComponent(state.email)}`);
-    }
-  }, [state.success, state.email, router]);
+  const form = useForm<SignUpInput>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: "onChange",
+  });
+
+  const onSubmit = (data: SignUpInput) => {
+    setServerError(null);
+
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+
+    startTransition(async () => {
+      const result = await signUpAction({}, formData);
+      if (result.error) {
+        setServerError(result.error);
+      } else if (result.success && result.email) {
+        router.push(`/auth/confirm?email=${encodeURIComponent(result.email)}`);
+      }
+    });
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -43,65 +71,88 @@ export default function SignUpPage() {
           </CardDescription>
         </CardHeader>
 
-        <form action={formAction}>
-          <CardContent className="space-y-4">
-            {state.error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {state.error}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                autoComplete="new-password"
-                minLength={8}
-              />
-              <p className="text-xs text-muted-foreground">
-                Minimum 8 characters
-              </p>
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? (
-                "Creating account…"
-              ) : (
-                <>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Sign Up
-                </>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent className="space-y-4">
+              {serverError && (
+                <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {serverError}
+                </div>
               )}
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/auth/signin"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="email">Email</Label>
+                    <FormControl>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        disabled={isPending}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="password">Password</Label>
+                    <FormControl>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        disabled={isPending}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum 8 characters
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign Up
+                  </>
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link
+                  href="/auth/signin"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Form>
       </Card>
     </div>
   );
