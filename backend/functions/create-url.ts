@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { Resource } from "sst";
 import { docClient } from "../infra/ddb";
 import { getUserId } from "../lib/auth";
+import { ensureUserExists } from "../lib/user";
 import { badRequest, unauthorized, success, serverError } from "../lib/response";
 
 /**
@@ -20,6 +21,9 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
   } catch {
     return unauthorized();
   }
+
+  // Ensure user exists in UsersTable before proceeding
+  await ensureUserExists(userId);
 
   if (!event.body) {
     return badRequest("Missing request body");

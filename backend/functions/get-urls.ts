@@ -3,6 +3,7 @@ import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { Resource } from "sst";
 import { docClient } from "../infra/ddb";
 import { getUserId } from "../lib/auth";
+import { ensureUserExists } from "../lib/user";
 import { unauthorized, success, serverError } from "../lib/response";
 import type { UrlItem } from "../lib/types";
 
@@ -17,6 +18,9 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
   } catch {
     return unauthorized();
   }
+
+  // Ensure user exists in UsersTable before proceeding
+  await ensureUserExists(userId);
 
   try {
     const items = await queryAllByUser(userId);

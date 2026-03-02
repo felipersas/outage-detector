@@ -53,4 +53,18 @@ export class TelegramClient {
       ...(options?.parseMode && { parse_mode: options.parseMode }),
     });
   }
+
+  static async setWebhook(webhookUrl: string): Promise<void> {
+    await TelegramClient.callApi("setWebhook", {
+      url: webhookUrl,
+    });
+  }
+
+  static async getWebhookInfo(): Promise<Record<string, unknown>> {
+    return await TelegramClient.callApi("getWebhookInfo", {});
+  }
+
+  static async deleteWebhook(): Promise<void> {
+    await TelegramClient.callApi("deleteWebhook", {});
+  }
 }

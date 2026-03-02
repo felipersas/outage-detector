@@ -1,8 +1,9 @@
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { Resource } from "sst";
 import { docClient } from "../infra/ddb";
 import { getUserId } from "../lib/auth";
+import { ensureUserExists } from "../lib/user";
 import { badRequest, unauthorized, success, serverError } from "../lib/response";
 
 /**
@@ -31,13 +32,17 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
   }
 
   try {
+    // Ensure user exists (creates empty record if needed)
+    await ensureUserExists(userId);
+
+    // Update telegramChatId for existing or newly created user
     await docClient.send(
-      new PutCommand({
+      new UpdateCommand({
         TableName: Resource.UsersTable.name,
-        Item: {
-          userId,
-          telegramChatId: String(telegramChatId),
-          createdAt: new Date().toISOString(),
+        Key: { userId },
+        UpdateExpression: "SET telegramChatId = :chatId",
+        ExpressionAttributeValues: {
+          ":chatId": String(telegramChatId),
         },
       }),
     );

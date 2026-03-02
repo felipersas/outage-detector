@@ -86,12 +86,12 @@ export default $config({
 
     api.route("POST /urls", {
       handler: "backend/functions/create-url.handler",
-      link: [table],
+      link: [table, usersTable],
     }, jwtAuth);
 
     api.route("GET /urls", {
       handler: "backend/functions/get-urls.handler",
-      link: [table],
+      link: [table, usersTable],
     }, jwtAuth);
 
     api.route("DELETE /urls/{id}", {

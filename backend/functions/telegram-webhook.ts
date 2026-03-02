@@ -1,4 +1,4 @@
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { Resource } from "sst";
 import { docClient } from "../infra/ddb";
@@ -26,23 +26,32 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
     const userId = text.split(" ")[1];
 
     if (userId) {
-      await docClient.send(
-        new PutCommand({
-          TableName: Resource.UsersTable.name,
-          Item: {
-            userId,
-            telegramChatId: chatId,
-            createdAt: new Date().toISOString(),
-          },
-        }),
-      );
+      try {
+        await docClient.send(
+          new UpdateCommand({
+            TableName: Resource.UsersTable.name,
+            Key: { userId },
+            UpdateExpression: "SET telegramChatId = :chatId",
+            ExpressionAttributeValues: {
+              ":chatId": chatId,
+            },
+          }),
+        );
 
-      await TelegramClient.sendMessage(
-        chatId,
-        "✅ Notifications enabled! You will be notified when an outage is detected.",
-      );
+        await TelegramClient.sendMessage(
+          chatId,
+          "✅ Notifications enabled! You will be notified when an outage is detected.",
+        );
 
-      return success({ ok: true });
+        return success({ ok: true });
+      } catch (err) {
+        console.error("Failed to link telegram:", err);
+        await TelegramClient.sendMessage(
+          chatId,
+          "❌ Error linking Telegram. Make sure you're using the correct User ID from your app settings.",
+        );
+        return success({ ok: true });
+      }
     }
   }
 
