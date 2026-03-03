@@ -9,6 +9,43 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+/**
+ * Converts base64url to base64 (replaces - with + and _ with /).
+ * Pads with = if necessary to make length a multiple of 4.
+ */
+function base64UrlToBase64(base64Url: string): string {
+  let base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) {
+    base64 += "=";
+  }
+  return base64;
+}
+
+/**
+ * Decodes a JWT payload (header.payload.signature) without verification.
+ * Returns null if the token is invalid.
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payloadB64 = base64UrlToBase64(parts[1]);
+    const payload = JSON.parse(atob(payloadB64));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Checks if a JWT token is expired.
+ */
+function isTokenExpired(payload: Record<string, unknown>): boolean {
+  const exp = payload.exp;
+  return typeof exp === "number" && exp * 1000 < Date.now();
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -22,23 +59,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/signin", request.url));
   }
 
-  try {
-    const [, payloadB64] = idToken.split(".");
-    const payload = JSON.parse(atob(payloadB64));
+  const payload = decodeJwtPayload(idToken);
 
-    if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
-      const response = NextResponse.redirect(
-        new URL("/auth/signin", request.url),
-      );
-      response.cookies.delete("id_token");
-      response.cookies.delete("refresh_token");
-      return response;
-    }
-
-    return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL("/auth/signin", request.url));
+  if (!payload || isTokenExpired(payload)) {
+    const response = NextResponse.redirect(
+      new URL("/auth/signin", request.url),
+    );
+    response.cookies.delete("id_token");
+    response.cookies.delete("refresh_token");
+    return response;
   }
+
+  return NextResponse.next();
 }
 
 export const config = {

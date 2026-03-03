@@ -1,6 +1,11 @@
-import { TelegramSetup } from "@/components/telegram-setup";
+import TelegramSetup from "@/components/telegram-setup";
+import { getIdToken } from "@/lib/session";
+import { getUserIdFromToken } from "@/lib/jwt";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const idToken = await getIdToken();
+  const userId = idToken ? getUserIdFromToken(idToken) : null;
+
   return (
     <div className="space-y-8">
       <div>
@@ -10,7 +15,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <TelegramSetup />
+      <TelegramSetup userId={userId} />
     </div>
   );
 }

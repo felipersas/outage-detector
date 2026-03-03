@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { PieChart, Pie, Cell, Label } from "recharts";
 import {
   ChartContainer,
@@ -18,7 +19,7 @@ const chartConfig: ChartConfig = {
   down: { label: "Down", color: "#f87171" },
 };
 
-export function StatusChart({ up, down }: StatusChartProps) {
+function StatusChart({ up, down }: StatusChartProps) {
   const total = up + down;
 
   const data = [
@@ -84,3 +85,9 @@ export function StatusChart({ up, down }: StatusChartProps) {
     </ChartContainer>
   );
 }
+
+/**
+ * Memoized StatusChart component to prevent unnecessary re-renders.
+ * Only re-renders when `up` or `down` props change.
+ */
+export default memo(StatusChart);

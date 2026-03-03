@@ -72,7 +72,18 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        Built with SST, Next.js, and AWS
+        <p>Built with SST, Next.js, and AWS</p>
+        <p className="mt-1">
+          Made by{" "}
+          <a
+            href="https://github.com/felipersas"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground"
+          >
+            @felipersas
+          </a>
+        </p>
       </footer>
     </div>
   );

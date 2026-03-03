@@ -1,11 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegisterTelegram } from "@/lib/hooks/use-urls";
+import { memo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,48 +9,55 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  MessageCircle,
-  CheckCircle,
-  AlertCircle,
-  Copy,
-  Info,
-  Loader2,
-} from "lucide-react";
-import {
-  telegramSetupFormSchema,
-  type TelegramSetupFormInput,
-} from "@/lib/schemas";
+import { MessageCircle, CheckCircle, ExternalLink, Copy, Info } from "lucide-react";
 
-export function TelegramSetup() {
-  const { mutate, isPending, isSuccess, isError, error: mutationError, reset } = useRegisterTelegram();
+/**
+ * Copy feedback timeout in milliseconds.
+ */
+const COPY_FEEDBACK_MS = 2000;
 
-  const form = useForm<TelegramSetupFormInput>({
-    resolver: zodResolver(telegramSetupFormSchema),
-    defaultValues: {
-      chatId: "",
-    },
-    mode: "onChange",
-  });
+interface TelegramSetupProps {
+  /** User ID for the Telegram bot command */
+  userId: string | null;
+  /** Whether the user has already connected Telegram (optional, defaults to false) */
+  isConnected?: boolean;
+}
 
-  const chatId = form.watch("chatId");
+function TelegramSetup({ userId, isConnected = false }: TelegramSetupProps) {
+  const botUsername = "AWSOutageDetectorBot";
+  const botLink = `https://t.me/${botUsername}`;
+  const startCommand = userId ? `/start ${userId}` : null;
+  const [copied, setCopied] = useState(false);
 
-  const onSubmit = (data: TelegramSetupFormInput) => {
-    reset();
-    mutate(data.chatId);
-  };
+  const handleCopyCommand = useCallback(() => {
+    if (startCommand) {
+      navigator.clipboard.writeText(startCommand);
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+    }
+  }, [startCommand]);
 
-  const handleCopyTemplate = () => {
-    const template = `/start ${chatId}`;
-    navigator.clipboard.writeText(template);
-  };
+  if (isConnected) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Telegram Notifications
+          </CardTitle>
+          <CardDescription>
+            Your account is connected to Telegram.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 text-sm text-emerald-400">
+            <CheckCircle className="h-4 w-4" />
+            <span>Connected successfully!</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -64,88 +67,69 @@ export function TelegramSetup() {
           Telegram Notifications
         </CardTitle>
         <CardDescription>
-          Connect your Telegram account to receive outage alerts. Send{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">/start</code>{" "}
-          to our bot to get your Chat ID.
+          Connect your Telegram account to receive outage alerts.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="chatId"
-              render={({ field }) => (
-                <FormItem>
-                  <Label htmlFor="chatId">Telegram Chat ID</Label>
-                  <FormControl>
-                    <Input
-                      id="chatId"
-                      type="text"
-                      placeholder="123456789"
-                      disabled={isPending}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {chatId && (
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 rounded-md bg-muted p-3">
-                  <Info className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                  <div className="flex-1 space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Copy this template and send it to the bot:
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 rounded bg-background px-2 py-1.5 text-sm">
-                        /start {chatId}
-                      </code>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0"
-                        onClick={handleCopyTemplate}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {isSuccess && (
-              <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 p-3 text-sm text-emerald-400">
-                <CheckCircle className="h-4 w-4" />
-                Telegram connected successfully!
-              </div>
-            )}
-
-            {isError && (
-              <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                {mutationError instanceof Error ? mutationError.message : "Registration failed"}
-              </div>
-            )}
-
-            <Button type="submit" disabled={isPending || !form.formState.isValid}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting…
-                </>
-              ) : (
-                "Connect Telegram"
-              )}
+      <CardContent className="space-y-4">
+        {/* Command to copy */}
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Copy this command and send it to the bot:
+          </p>
+          <div className="flex gap-2">
+            <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm font-mono">
+              {startCommand || "Loading..."}
+            </code>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={handleCopyCommand}
+              disabled={!startCommand}
+              aria-label="Copy command to clipboard"
+            >
+              <Copy className="h-4 w-4" />
             </Button>
-          </form>
-        </Form>
+          </div>
+          {copied && (
+            <p className="text-xs text-muted-foreground" role="status">
+              Copied to clipboard
+            </p>
+          )}
+        </div>
+
+        {/* Bot link */}
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">
+            Then open the bot and paste the command:
+          </p>
+          <Button variant="outline" className="w-full" asChild>
+            <a
+              href={botLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${botUsername} on Telegram`}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Open {botUsername}
+            </a>
+          </Button>
+        </div>
+
+        {/* Info message */}
+        <div className="flex items-start gap-2 rounded-md bg-muted/50 p-3">
+          <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            After sending the command, the bot will automatically link your Telegram account.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
 }
+
+/**
+ * Memoized TelegramSetup component to prevent unnecessary re-renders.
+ * Only re-renders when `userId` or `isConnected` props change.
+ */
+export default memo(TelegramSetup);

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useDeleteUrl } from "@/lib/hooks/use-urls";
 import type { UrlItem } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ const statusVariant: Record<string, "success" | "destructive"> = {
   down: "destructive",
 };
 
-export function UrlTable({ urls }: UrlTableProps) {
+function UrlTable({ urls }: UrlTableProps) {
   const { mutate: deleteUrl, isPending } = useDeleteUrl();
 
   if (urls.length === 0) {
@@ -90,3 +91,9 @@ export function UrlTable({ urls }: UrlTableProps) {
     </Table>
   );
 }
+
+/**
+ * Memoized UrlTable component to prevent unnecessary re-renders.
+ * Only re-renders when the `urls` array reference changes.
+ */
+export default memo(UrlTable);
