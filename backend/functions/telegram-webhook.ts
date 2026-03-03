@@ -40,7 +40,7 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
 
         await TelegramClient.sendMessage(
           chatId,
-          "✅ Notifications enabled! You will be notified when an outage is detected.",
+          "Notifications enabled! You will be notified when an outage is detected.",
         );
 
         return success({ ok: true });
@@ -48,7 +48,7 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
         console.error("Failed to link telegram:", err);
         await TelegramClient.sendMessage(
           chatId,
-          "❌ Error linking Telegram. Make sure you're using the correct User ID from your app settings.",
+          "Error linking Telegram. Make sure you're using the correct User ID from your app settings.",
         );
         return success({ ok: true });
       }

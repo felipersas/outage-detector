@@ -2,9 +2,9 @@ import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
 import { Resource } from "sst";
 import { docClient } from "../infra/ddb";
-import { getUserId } from "../lib/auth";
+import { withAuth } from "../lib/auth";
 import { ensureUserExists } from "../lib/user";
-import { badRequest, unauthorized, success, serverError } from "../lib/response";
+import { badRequest, success, serverError } from "../lib/response";
 
 /**
  * POST /register-telegram — Links a Telegram chat ID to the authenticated user.
@@ -12,15 +12,10 @@ import { badRequest, unauthorized, success, serverError } from "../lib/response"
  * Body: { telegramChatId: string }
  * Auth: Cognito JWT (userId extracted from `sub` claim)
  */
-export const handler = async (event: APIGatewayProxyEventV2) => {
-  let userId: string;
-
-  try {
-    userId = getUserId(event);
-  } catch {
-    return unauthorized();
-  }
-
+export const handler = withAuth(async (
+  event: APIGatewayProxyEventV2,
+  userId: string,
+) => {
   if (!event.body) {
     return badRequest("Missing request body");
   }
@@ -52,4 +47,4 @@ export const handler = async (event: APIGatewayProxyEventV2) => {
     console.error("Failed to register telegram:", err);
     return serverError("Failed to register Telegram");
   }
-};
+});

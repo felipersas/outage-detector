@@ -16,7 +16,7 @@ export const handler = async () => {
   const downUrls = await queryAllByStatus("down");
   const allUrls = [...upUrls, ...downUrls];
 
-  // Processa em batches para não sobrecarregar a rede
+  // Process in batches to avoid overloading the network
   for (let i = 0; i < allUrls.length; i += CHECK_CONCURRENCY) {
     const batch = allUrls.slice(i, i + CHECK_CONCURRENCY);
     await Promise.allSettled(batch.map((item) => checkUrl(item)));

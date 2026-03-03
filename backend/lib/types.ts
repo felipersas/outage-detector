@@ -1,22 +1,22 @@
-/** Item da tabela OutageTable */
+/** Item from the OutageTable */
 export interface UrlItem {
   id: string;
   userId: string;
   url: string;
   status: "up" | "down";
   lastChecked: string;
-  /** ISO timestamp da última notificação enviada (outage ou recovery) */
+  /** ISO timestamp of the last notification sent (outage or recovery) */
   lastNotifiedAt?: string;
 }
 
-/** Item da tabela UsersTable */
+/** Item from the UsersTable */
 export interface UserItem {
   userId: string;
   telegramChatId: string;
   createdAt: string;
 }
 
-/** Mensagem publicada no SNS quando um outage ou recovery é detectado */
+/** Message published to SNS when an outage or recovery is detected */
 export interface OutageAlert {
   type: "outage" | "recovery";
   url: string;
@@ -24,7 +24,7 @@ export interface OutageAlert {
   timestamp: string;
 }
 
-/** Payload do webhook do Telegram */
+/** Telegram webhook payload */
 export interface TelegramUpdate {
   message?: {
     chat: { id: number };
